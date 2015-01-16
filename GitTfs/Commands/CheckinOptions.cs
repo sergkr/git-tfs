@@ -8,6 +8,11 @@ namespace Sep.Git.Tfs.Commands
     [StructureMapSingleton]
     public class CheckinOptions
     {
+        public CheckinOptions(ConfigProperties properties)
+        {
+            _properties = properties;
+        }
+
         public OptionSet OptionSet
         {
             get
@@ -40,13 +45,26 @@ namespace Sep.Git.Tfs.Commands
             }
         }
 
+        private readonly ConfigProperties _properties;
         private List<string> _workItemsToAssociate = new List<string>();
         private List<string> _workItemsToResolve = new List<string>();
         private Dictionary<string, string> _checkinNotes = new Dictionary<string, string>();
+        private bool? _noGenerateCheckinComment;
 
         public string CheckinComment { get; set; }
         // This can be extended to checkin when the $EDITOR is invoked.
-        public bool NoGenerateCheckinComment { get; set; }
+        public bool NoGenerateCheckinComment
+        {
+            get
+            {
+                return _noGenerateCheckinComment.HasValue ? _noGenerateCheckinComment.Value : _properties.NoBuildDefaultComment;
+            }
+
+            set
+            {
+                _noGenerateCheckinComment = value;
+            }
+        }
         public bool NoMerge { get; set; }
         public string OverrideReason { get; set; }
         public bool Force { get; set; }

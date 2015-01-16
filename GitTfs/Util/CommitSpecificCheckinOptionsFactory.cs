@@ -21,12 +21,14 @@ namespace Sep.Git.Tfs.Util
         private readonly TextWriter writer;
         private readonly Globals globals;
         private AuthorsFile authors;
+        private readonly ConfigProperties properties;
 
-        public CommitSpecificCheckinOptionsFactory(TextWriter writer, Globals globals, AuthorsFile authors)
+        public CommitSpecificCheckinOptionsFactory(TextWriter writer, Globals globals, AuthorsFile authors, ConfigProperties properties)
         {
             this.writer = writer;
             this.globals = globals;
             this.authors = authors;
+            this.properties = properties;
         }
 
         public CheckinOptions BuildCommitSpecificCheckinOptions(CheckinOptions sourceCheckinOptions, string commitMessage)
@@ -63,7 +65,7 @@ namespace Sep.Git.Tfs.Util
 
         private CheckinOptions Clone(CheckinOptions source)
         {
-            CheckinOptions clone = new CheckinOptions();
+            CheckinOptions clone = new CheckinOptions(properties);
 
             clone.CheckinComment = source.CheckinComment;
             clone.NoGenerateCheckinComment = source.NoGenerateCheckinComment;
