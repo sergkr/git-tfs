@@ -5,6 +5,7 @@ using Rhino.Mocks;
 using Sep.Git.Tfs.Commands;
 using Sep.Git.Tfs.Core;
 using Sep.Git.Tfs.Core.TfsInterop;
+using Sep.Git.Tfs.Util;
 using Xunit;
 
 namespace Sep.Git.Tfs.Test.Core
@@ -19,7 +20,8 @@ namespace Sep.Git.Tfs.Test.Core
             TextWriter writer = new StringWriter();
             TfsChangesetInfo contextVersion = MockRepository.GenerateStub<TfsChangesetInfo>();
             IGitTfsRemote remote = MockRepository.GenerateStub<IGitTfsRemote>();
-            CheckinOptions checkinOptions = new CheckinOptions();
+            ConfigProperties configProperties = MockRepository.GenerateStub<ConfigProperties>();
+            CheckinOptions checkinOptions = new CheckinOptions(configProperties);
             ITfsHelper tfsHelper = MockRepository.GenerateStub<ITfsHelper>();
             CheckinPolicyEvaluator policyEvaluator = new CheckinPolicyEvaluator();
 
@@ -43,7 +45,8 @@ namespace Sep.Git.Tfs.Test.Core
             TextWriter writer = new StringWriter();
             TfsChangesetInfo contextVersion = MockRepository.GenerateStub<TfsChangesetInfo>();
             IGitTfsRemote remote = MockRepository.GenerateStub<IGitTfsRemote>();
-            CheckinOptions checkinOptions = new CheckinOptions();
+            ConfigProperties configProperties = MockRepository.GenerateStub<ConfigProperties>();
+            CheckinOptions checkinOptions = new CheckinOptions(configProperties);
             ITfsHelper tfsHelper = MockRepository.GenerateStub<ITfsHelper>();
             CheckinPolicyEvaluator policyEvaluator = new CheckinPolicyEvaluator();
 

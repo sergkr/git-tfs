@@ -27,15 +27,16 @@ namespace Sep.Git.Tfs.Test.Util
             mocks.Get<Globals>().GitDir = ".git";
             gitRepository.Stub(r => r.GitDir).Return(".");
             gitRepository.Stub(r => r.GetConfig(GitTfsConstants.WorkItemAssociateRegexConfigKey)).Return(workItemRegex);
+            ConfigProperties configProperties = MockRepository.GenerateStub<ConfigProperties>();
 
-            return new CommitSpecificCheckinOptionsFactory(new StringWriter(), mocks.Get<Globals>(), new AuthorsFile());
+            return new CommitSpecificCheckinOptionsFactory(new StringWriter(), mocks.Get<Globals>(), new AuthorsFile(), configProperties);
         }
 
         [Fact]
         public void Sets_commit_message_as_checkin_comments()
         {
             string originalCheckinComment = "command-line input";
-            var singletonCheckinOptions = new CheckinOptions
+            var singletonCheckinOptions = new CheckinOptions(mocks.Get<ConfigProperties>())
             {
                 CheckinComment = originalCheckinComment
             };
