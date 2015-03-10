@@ -24,11 +24,11 @@ namespace Sep.Git.Tfs.Commands
         private bool AutoRebase { get; set; }
         private bool ForceCheckin { get; set; }
 
-        public Rcheckin(TextWriter stdout, CheckinOptions checkinOptions, TfsWriter writer, Globals globals, AuthorsFile authors)
+        public Rcheckin(TextWriter stdout, CheckinOptions checkinOptions, TfsWriter writer, Globals globals, AuthorsFile authors, ConfigProperties properties)
         {
             _stdout = stdout;
             _checkinOptions = checkinOptions;
-            _checkinOptionsFactory = new CommitSpecificCheckinOptionsFactory(_stdout, globals, authors);
+            _checkinOptionsFactory = new CommitSpecificCheckinOptionsFactory(_stdout, globals, authors, properties);
             _writer = writer;
             _globals = globals;
             _authors = authors;

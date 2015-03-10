@@ -3,6 +3,7 @@ using Rhino.Mocks;
 using Rhino.Mocks.Constraints;
 using Sep.Git.Tfs.Commands;
 using Sep.Git.Tfs.Core;
+using Sep.Git.Tfs.Util;
 using StructureMap.AutoMocking;
 using Xunit;
 
@@ -17,6 +18,18 @@ namespace Sep.Git.Tfs.Test.Commands
             mocks = new RhinoAutoMocker<Shelve>();
             mocks.Inject<TextWriter>(new StringWriter());
             mocks.Get<Globals>().Repository = mocks.Get<IGitRepository>();
+            mocks.Inject<CheckinOptions>(StubCheckinOptions);
+        }
+
+        private CheckinOptions StubCheckinOptions
+        {
+            get
+            {
+                var globals = new Globals { Repository = mocks.Get<IGitRepository>() };
+                var configLoader = new ConfigPropertyLoader(globals);
+                var configProperties = new ConfigProperties(configLoader);
+                return new CheckinOptions(configProperties);
+            }
         }
 
         [Fact]

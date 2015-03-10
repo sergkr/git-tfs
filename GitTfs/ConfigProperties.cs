@@ -24,5 +24,11 @@ namespace Sep.Git.Tfs
             set { _loader.Override(GitTfsConstants.BatchSize, value); }
             get { return _loader.Get(GitTfsConstants.BatchSize, 100); }
         }
+
+        public bool NoBuildDefaultComment
+        {
+            set { _loader.Override(GitTfsConstants.NoBuildDefaultComment, value); }
+            get { return _loader.Get(GitTfsConstants.NoBuildDefaultComment, false); }
+        }
     }
 }
