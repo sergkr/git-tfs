@@ -6,32 +6,46 @@ using Sep.Git.Tfs.Commands;
 using Sep.Git.Tfs.Core;
 using Sep.Git.Tfs.Core.TfsInterop;
 using Sep.Git.Tfs.Util;
+using StructureMap.AutoMocking;
 using Xunit;
 
 namespace Sep.Git.Tfs.Test.Core
 {
     public class TfsWorkspaceTests
     {
+        private TfsWorkspace BuildWorkspace(IWorkspace workspace, TextWriter writer)
+        {
+            string localDirectory = string.Empty;
+            TfsChangesetInfo contextVersion = MockRepository.GenerateStub<TfsChangesetInfo>();
+            IGitTfsRemote remote = MockRepository.GenerateStub<IGitTfsRemote>();
+            CheckinOptions checkinOptions = StubCheckinOptions;
+            ITfsHelper tfsHelper = MockRepository.GenerateStub<ITfsHelper>();
+            CheckinPolicyEvaluator policyEvaluator = new CheckinPolicyEvaluator();
+
+            return new TfsWorkspace(workspace, localDirectory, writer, contextVersion, remote, checkinOptions, tfsHelper, policyEvaluator);
+        }
+
+        private CheckinOptions StubCheckinOptions
+        {
+            get
+            {
+                var configLoader = new ConfigPropertyLoader(MockRepository.GenerateStub<Globals>());
+                var configProperties = new ConfigProperties(configLoader);
+                return new CheckinOptions(configProperties);
+            }
+        }
+
         [Fact]
         public void Nothing_to_checkin()
         {
             IWorkspace workspace = MockRepository.GenerateStub<IWorkspace>();
-            string localDirectory = string.Empty;
-            TextWriter writer = new StringWriter();
-            TfsChangesetInfo contextVersion = MockRepository.GenerateStub<TfsChangesetInfo>();
-            IGitTfsRemote remote = MockRepository.GenerateStub<IGitTfsRemote>();
-            ConfigProperties configProperties = MockRepository.GenerateStub<ConfigProperties>();
-            CheckinOptions checkinOptions = new CheckinOptions(configProperties);
-            ITfsHelper tfsHelper = MockRepository.GenerateStub<ITfsHelper>();
-            CheckinPolicyEvaluator policyEvaluator = new CheckinPolicyEvaluator();
-
-            TfsWorkspace tfsWorkspace = new TfsWorkspace(workspace, localDirectory, writer, contextVersion, remote, checkinOptions, tfsHelper, policyEvaluator);
+            TfsWorkspace tfsWorkspace = BuildWorkspace(workspace, new StringWriter());
 
             workspace.Stub(w => w.GetPendingChanges()).Return(null);
 
             var ex = Assert.Throws<GitTfsException>(() =>
             {
-                var result = tfsWorkspace.Checkin(checkinOptions);
+                var result = tfsWorkspace.Checkin(StubCheckinOptions);
             });
 
             Assert.Equal("Nothing to checkin!", ex.Message);
@@ -41,16 +55,7 @@ namespace Sep.Git.Tfs.Test.Core
         public void Checkin_failed()
         {
             IWorkspace workspace = MockRepository.GenerateStub<IWorkspace>();
-            string localDirectory = string.Empty;
-            TextWriter writer = new StringWriter();
-            TfsChangesetInfo contextVersion = MockRepository.GenerateStub<TfsChangesetInfo>();
-            IGitTfsRemote remote = MockRepository.GenerateStub<IGitTfsRemote>();
-            ConfigProperties configProperties = MockRepository.GenerateStub<ConfigProperties>();
-            CheckinOptions checkinOptions = new CheckinOptions(configProperties);
-            ITfsHelper tfsHelper = MockRepository.GenerateStub<ITfsHelper>();
-            CheckinPolicyEvaluator policyEvaluator = new CheckinPolicyEvaluator();
-
-            TfsWorkspace tfsWorkspace = new TfsWorkspace(workspace, localDirectory, writer, contextVersion, remote, checkinOptions, tfsHelper, policyEvaluator);
+            TfsWorkspace tfsWorkspace = BuildWorkspace(workspace, new StringWriter());
 
             IPendingChange pendingChange = MockRepository.GenerateStub<IPendingChange>();
             IPendingChange[] allPendingChanges = new IPendingChange[] { pendingChange };
@@ -81,7 +86,7 @@ namespace Sep.Git.Tfs.Test.Core
 
             var ex = Assert.Throws<GitTfsException>(() =>
             {
-                var result = tfsWorkspace.Checkin(checkinOptions);
+                var result = tfsWorkspace.Checkin(StubCheckinOptions);
             });
 
             Assert.Equal("Checkin failed!", ex.Message);
@@ -91,15 +96,8 @@ namespace Sep.Git.Tfs.Test.Core
         public void Policy_failed()
         {
             IWorkspace workspace = MockRepository.GenerateStub<IWorkspace>();
-            string localDirectory = string.Empty;
             TextWriter writer = new StringWriter();
-            TfsChangesetInfo contextVersion = MockRepository.GenerateStub<TfsChangesetInfo>();
-            IGitTfsRemote remote = MockRepository.GenerateStub<IGitTfsRemote>();
-            CheckinOptions checkinOptions = new CheckinOptions();
-            ITfsHelper tfsHelper = MockRepository.GenerateStub<ITfsHelper>();
-            CheckinPolicyEvaluator policyEvaluator = new CheckinPolicyEvaluator();
-
-            TfsWorkspace tfsWorkspace = new TfsWorkspace(workspace, localDirectory, writer, contextVersion, remote, checkinOptions, tfsHelper, policyEvaluator);
+            TfsWorkspace tfsWorkspace = BuildWorkspace(workspace, writer);
 
             IPendingChange pendingChange = MockRepository.GenerateStub<IPendingChange>();
             IPendingChange[] allPendingChanges = new IPendingChange[] { pendingChange };
@@ -131,7 +129,7 @@ namespace Sep.Git.Tfs.Test.Core
 
             var ex = Assert.Throws<GitTfsException>(() =>
             {
-                var result = tfsWorkspace.Checkin(checkinOptions);
+                var result = tfsWorkspace.Checkin(StubCheckinOptions);
             });
 
             Assert.Equal("No changes checked in.", ex.Message);
@@ -142,15 +140,8 @@ namespace Sep.Git.Tfs.Test.Core
         public void Policy_failed_and_Force_without_an_OverrideReason()
         {
             IWorkspace workspace = MockRepository.GenerateStub<IWorkspace>();
-            string localDirectory = string.Empty;
             TextWriter writer = new StringWriter();
-            TfsChangesetInfo contextVersion = MockRepository.GenerateStub<TfsChangesetInfo>();
-            IGitTfsRemote remote = MockRepository.GenerateStub<IGitTfsRemote>();
-            CheckinOptions checkinOptions = new CheckinOptions();
-            ITfsHelper tfsHelper = MockRepository.GenerateStub<ITfsHelper>();
-            CheckinPolicyEvaluator policyEvaluator = new CheckinPolicyEvaluator();
-
-            TfsWorkspace tfsWorkspace = new TfsWorkspace(workspace, localDirectory, writer, contextVersion, remote, checkinOptions, tfsHelper, policyEvaluator);
+            TfsWorkspace tfsWorkspace = BuildWorkspace(workspace, writer);
 
             IPendingChange pendingChange = MockRepository.GenerateStub<IPendingChange>();
             IPendingChange[] allPendingChanges = new IPendingChange[] { pendingChange };
@@ -160,6 +151,7 @@ namespace Sep.Git.Tfs.Test.Core
                 new StubbedCheckinEvaluationResult()
                         .WithPoilicyFailure("No work items associated.");
 
+            CheckinOptions checkinOptions = StubCheckinOptions;
             checkinOptions.Force = true;
 
             workspace.Stub(w => w.EvaluateCheckin(
@@ -195,15 +187,8 @@ namespace Sep.Git.Tfs.Test.Core
         public void Policy_failed_and_Force_with_an_OverrideReason()
         {
             IWorkspace workspace = MockRepository.GenerateStub<IWorkspace>();
-            string localDirectory = string.Empty;
             TextWriter writer = new StringWriter();
-            TfsChangesetInfo contextVersion = MockRepository.GenerateStub<TfsChangesetInfo>();
-            IGitTfsRemote remote = MockRepository.GenerateStub<IGitTfsRemote>();
-            CheckinOptions checkinOptions = new CheckinOptions();
-            ITfsHelper tfsHelper = MockRepository.GenerateStub<ITfsHelper>();
-            CheckinPolicyEvaluator policyEvaluator = new CheckinPolicyEvaluator();
-
-            TfsWorkspace tfsWorkspace = new TfsWorkspace(workspace, localDirectory, writer, contextVersion, remote, checkinOptions, tfsHelper, policyEvaluator);
+            TfsWorkspace tfsWorkspace = BuildWorkspace(workspace, writer);
 
             IPendingChange pendingChange = MockRepository.GenerateStub<IPendingChange>();
             IPendingChange[] allPendingChanges = new IPendingChange[] { pendingChange };
@@ -213,6 +198,7 @@ namespace Sep.Git.Tfs.Test.Core
                 new StubbedCheckinEvaluationResult()
                         .WithPoilicyFailure("No work items associated.");
 
+            CheckinOptions checkinOptions = StubCheckinOptions;
             checkinOptions.Force = true;
             checkinOptions.OverrideReason = "no work items";
 

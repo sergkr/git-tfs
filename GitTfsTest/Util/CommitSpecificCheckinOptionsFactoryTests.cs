@@ -27,25 +27,36 @@ namespace Sep.Git.Tfs.Test.Util
             mocks.Get<Globals>().GitDir = ".git";
             gitRepository.Stub(r => r.GitDir).Return(".");
             gitRepository.Stub(r => r.GetConfig(GitTfsConstants.WorkItemAssociateRegexConfigKey)).Return(workItemRegex);
-            ConfigProperties configProperties = MockRepository.GenerateStub<ConfigProperties>();
+            var configLoader = new ConfigPropertyLoader(MockRepository.GenerateStub<Globals>());
+            var configProperties = new ConfigProperties(configLoader);
 
             return new CommitSpecificCheckinOptionsFactory(new StringWriter(), mocks.Get<Globals>(), new AuthorsFile(), configProperties);
+        }
+
+        private CheckinOptions StubCheckinOptions
+        {
+            get
+            {
+                var globals = new Globals { Repository = mocks.Get<IGitRepository>() };
+                var configLoader = new ConfigPropertyLoader(globals);
+                var configProperties = new ConfigProperties(configLoader);
+                return new CheckinOptions(configProperties);
+            }
         }
 
         [Fact]
         public void Sets_commit_message_as_checkin_comments()
         {
-            string originalCheckinComment = "command-line input";
-            var singletonCheckinOptions = new CheckinOptions(mocks.Get<ConfigProperties>())
-            {
-                CheckinComment = originalCheckinComment
-            };
+            const string originalCheckinComment = "command-line input";
 
+            var checkinOptions = StubCheckinOptions;
+            checkinOptions.CheckinComment = originalCheckinComment;
+            
             string commitMessage = @"test message
 
 		formatted git commit message";
 
-            var specificCheckinOptions = GetCommitSpecificCheckinOptions().BuildCommitSpecificCheckinOptions(singletonCheckinOptions, commitMessage);
+            var specificCheckinOptions = GetCommitSpecificCheckinOptions().BuildCommitSpecificCheckinOptions(checkinOptions, commitMessage);
             Assert.Equal(commitMessage, specificCheckinOptions.CheckinComment);
         }
 
@@ -64,7 +75,7 @@ namespace Sep.Git.Tfs.Test.Util
 
 		";
 
-            var specificCheckinOptions = GetCommitSpecificCheckinOptions().BuildCommitSpecificCheckinOptions(new CheckinOptions(), commitMessage);
+            var specificCheckinOptions = GetCommitSpecificCheckinOptions().BuildCommitSpecificCheckinOptions(StubCheckinOptions, commitMessage);
 
             Assert.Equal(1, specificCheckinOptions.WorkItemsToAssociate.Count);
             Assert.Contains("1234", specificCheckinOptions.WorkItemsToAssociate);
@@ -79,7 +90,7 @@ namespace Sep.Git.Tfs.Test.Util
 
                 git-tfs-work-item: 1234";
 
-            var specificCheckinOptions = GetCommitSpecificCheckinOptions().BuildCommitSpecificCheckinOptions(new CheckinOptions(), commitMessage);
+            var specificCheckinOptions = GetCommitSpecificCheckinOptions().BuildCommitSpecificCheckinOptions(StubCheckinOptions, commitMessage);
             Assert.Equal(1, specificCheckinOptions.WorkItemsToAssociate.Count);
         }
 
@@ -88,7 +99,7 @@ namespace Sep.Git.Tfs.Test.Util
         {
             string commitMessage = @"test workitem #5676";
 
-            var specificCheckinOptions = GetCommitSpecificCheckinOptions().BuildCommitSpecificCheckinOptions(new CheckinOptions(), commitMessage);
+            var specificCheckinOptions = GetCommitSpecificCheckinOptions().BuildCommitSpecificCheckinOptions(StubCheckinOptions, commitMessage);
             Assert.Equal(1, specificCheckinOptions.WorkItemsToAssociate.Count);
             Assert.Contains("5676", specificCheckinOptions.WorkItemsToAssociate);
         }
@@ -98,7 +109,7 @@ namespace Sep.Git.Tfs.Test.Util
         {
             string commitMessage = @"test workitem #5676";
 
-            var specificCheckinOptions = GetCommitSpecificCheckinOptions(@"workitem id:(?<item_id>\d+)").BuildCommitSpecificCheckinOptions(new CheckinOptions(), commitMessage);
+            var specificCheckinOptions = GetCommitSpecificCheckinOptions(@"workitem id:(?<item_id>\d+)").BuildCommitSpecificCheckinOptions(StubCheckinOptions, commitMessage);
             Assert.Equal(0, specificCheckinOptions.WorkItemsToAssociate.Count);
         }
 
@@ -107,7 +118,7 @@ namespace Sep.Git.Tfs.Test.Util
         {
             string commitMessage = @"test workitem id:5676";
 
-            var specificCheckinOptions = GetCommitSpecificCheckinOptions(@"workitem id:(?<item_id>\d+)").BuildCommitSpecificCheckinOptions(new CheckinOptions(), commitMessage);
+            var specificCheckinOptions = GetCommitSpecificCheckinOptions(@"workitem id:(?<item_id>\d+)").BuildCommitSpecificCheckinOptions(StubCheckinOptions, commitMessage);
             Assert.Equal(1, specificCheckinOptions.WorkItemsToAssociate.Count);
             Assert.Contains("5676", specificCheckinOptions.WorkItemsToAssociate);
         }
@@ -117,7 +128,7 @@ namespace Sep.Git.Tfs.Test.Util
         {
             string commitMessage = @"test workitem #5676";
 
-            var specificCheckinOptions = GetCommitSpecificCheckinOptions(@"workitem id:((?<item_id>\d+)").BuildCommitSpecificCheckinOptions(new CheckinOptions(), commitMessage);
+            var specificCheckinOptions = GetCommitSpecificCheckinOptions(@"workitem id:((?<item_id>\d+)").BuildCommitSpecificCheckinOptions(StubCheckinOptions, commitMessage);
             Assert.Equal(0, specificCheckinOptions.WorkItemsToAssociate.Count);
         }
 
@@ -126,7 +137,7 @@ namespace Sep.Git.Tfs.Test.Util
         {
             string commitMessage = @"test workitem #5676";
 
-            var specificCheckinOptions = GetCommitSpecificCheckinOptions(@"").BuildCommitSpecificCheckinOptions(new CheckinOptions(), commitMessage);
+            var specificCheckinOptions = GetCommitSpecificCheckinOptions(@"").BuildCommitSpecificCheckinOptions(StubCheckinOptions, commitMessage);
             Assert.Equal(1, specificCheckinOptions.WorkItemsToAssociate.Count);
             Assert.Contains("5676", specificCheckinOptions.WorkItemsToAssociate);
         }
@@ -136,7 +147,7 @@ namespace Sep.Git.Tfs.Test.Util
         {
             string commitMessage = @"test workitem #56p76";
 
-            var specificCheckinOptions = GetCommitSpecificCheckinOptions().BuildCommitSpecificCheckinOptions(new CheckinOptions(), commitMessage);
+            var specificCheckinOptions = GetCommitSpecificCheckinOptions().BuildCommitSpecificCheckinOptions(StubCheckinOptions, commitMessage);
             Assert.Equal(1, specificCheckinOptions.WorkItemsToAssociate.Count);
             Assert.Contains("56", specificCheckinOptions.WorkItemsToAssociate);
         }
@@ -146,7 +157,7 @@ namespace Sep.Git.Tfs.Test.Util
         {
             string commitMessage = @"test workitem #f5676";
 
-            var specificCheckinOptions = GetCommitSpecificCheckinOptions().BuildCommitSpecificCheckinOptions(new CheckinOptions(), commitMessage);
+            var specificCheckinOptions = GetCommitSpecificCheckinOptions().BuildCommitSpecificCheckinOptions(StubCheckinOptions, commitMessage);
             Assert.Equal(0, specificCheckinOptions.WorkItemsToAssociate.Count);
         }
 
@@ -156,7 +167,7 @@ namespace Sep.Git.Tfs.Test.Util
             string commitMessage = @"test workitem #5676 1 only
                 git-tfs-work-item: 1234";
 
-            var specificCheckinOptions = GetCommitSpecificCheckinOptions().BuildCommitSpecificCheckinOptions(new CheckinOptions(), commitMessage);
+            var specificCheckinOptions = GetCommitSpecificCheckinOptions().BuildCommitSpecificCheckinOptions(StubCheckinOptions, commitMessage);
             Assert.Equal(2, specificCheckinOptions.WorkItemsToAssociate.Count);
             Assert.Contains("1234", specificCheckinOptions.WorkItemsToAssociate);
             Assert.Contains("5676", specificCheckinOptions.WorkItemsToAssociate);
@@ -168,7 +179,7 @@ namespace Sep.Git.Tfs.Test.Util
             string commitMessage = @"test workitem #5676
                 git-tfs-work-item: 5676";
 
-            var specificCheckinOptions = GetCommitSpecificCheckinOptions().BuildCommitSpecificCheckinOptions(new CheckinOptions(), commitMessage);
+            var specificCheckinOptions = GetCommitSpecificCheckinOptions().BuildCommitSpecificCheckinOptions(StubCheckinOptions, commitMessage);
             Assert.Equal(1, specificCheckinOptions.WorkItemsToAssociate.Count);
             Assert.Contains("5676", specificCheckinOptions.WorkItemsToAssociate);
         }
@@ -188,7 +199,7 @@ namespace Sep.Git.Tfs.Test.Util
 
 		";
 
-            var specificCheckinOptions = GetCommitSpecificCheckinOptions().BuildCommitSpecificCheckinOptions(new CheckinOptions(), commitMessage);
+            var specificCheckinOptions = GetCommitSpecificCheckinOptions().BuildCommitSpecificCheckinOptions(StubCheckinOptions, commitMessage);
             Assert.Equal(1, specificCheckinOptions.WorkItemsToResolve.Count);
             Assert.Contains("1234", specificCheckinOptions.WorkItemsToResolve);
             Assert.Equal(expectedCheckinComment.Replace(Environment.NewLine, "NEWLINE"), specificCheckinOptions.CheckinComment.Replace(Environment.NewLine, "NEWLINE"));
@@ -212,7 +223,7 @@ namespace Sep.Git.Tfs.Test.Util
 
 		";
 
-            var specificCheckinOptions = GetCommitSpecificCheckinOptions().BuildCommitSpecificCheckinOptions(new CheckinOptions(), commitMessage);
+            var specificCheckinOptions = GetCommitSpecificCheckinOptions().BuildCommitSpecificCheckinOptions(StubCheckinOptions, commitMessage);
             Assert.Equal(1, specificCheckinOptions.WorkItemsToResolve.Count);
             Assert.Equal(1, specificCheckinOptions.WorkItemsToAssociate.Count);
             Assert.Contains("1234", specificCheckinOptions.WorkItemsToResolve);
@@ -239,7 +250,7 @@ namespace Sep.Git.Tfs.Test.Util
                 "Some more information,\n" +
                 "in a paragraph.";
 
-            var specificCheckinOptions = GetCommitSpecificCheckinOptions().BuildCommitSpecificCheckinOptions(new CheckinOptions(), commitMessage);
+            var specificCheckinOptions = GetCommitSpecificCheckinOptions().BuildCommitSpecificCheckinOptions(StubCheckinOptions, commitMessage);
             Assert.Equal(3, specificCheckinOptions.CheckinNotes.Count);
             Assert.Equal("John Smith", specificCheckinOptions.CheckinNotes["Code Reviewer"]);
             Assert.Equal("Teddy Knox", specificCheckinOptions.CheckinNotes["Security Reviewer"]);
